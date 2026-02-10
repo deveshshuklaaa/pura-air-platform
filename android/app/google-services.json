@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "559850812116",
+    "firebase_url": "https://pura-air-default-rtdb.firebaseio.com",
+    "project_id": "pura-air",
+    "storage_bucket": "pura-air.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:559850812116:android:e1fe3ec96840d4cd5ec141",
+        "android_client_info": {
+          "package_name": "com.puraair.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "559850812116-p3lvf8hcq2k0fnu30o5aquo4qe96i776.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.puraair.app",
+            "certificate_hash": "bca3dde373f1bd57029995cf8b81ab1be55dd607"
+          }
+        },
+        {
+          "client_id": "559850812116-48lc3v26i06eda2h1q742au04s3a6ftj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCL-EpGl5BJZ6xc2G5XqoazHt6nId-iS5w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "559850812116-48lc3v26i06eda2h1q742au04s3a6ftj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
