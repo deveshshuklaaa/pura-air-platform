@@ -1,4 +1,5 @@
 ﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authStateProvider = StreamProvider<User?>((ref) {
@@ -10,8 +11,9 @@ final authControllerProvider = Provider<AuthController>((ref) {
 });
 
 class AuthController {
-  AuthController(this._auth);
+  AuthController(this._auth) : _googleSignIn = GoogleSignIn();
   final FirebaseAuth _auth;
+  final GoogleSignIn _googleSignIn;
 
   Future<UserCredential> signInWithEmail(String email, String password) {
     return _auth.signInWithEmailAndPassword(email: email, password: password);
@@ -25,7 +27,11 @@ class AuthController {
     return _auth.signInAnonymously();
   }
 
-  Future<void> signOut() {
-    return _auth.signOut();
+  Future<void> signOut() async {
+    try {
+      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect();
+    } catch (_) {}
+    await _auth.signOut();
   }
 }

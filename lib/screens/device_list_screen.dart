@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../models/device.dart';
 import '../repositories/device_repository.dart';
 import '../state/device_state.dart';
 import '../widgets/device_card.dart';
+import '../widgets/auth_required_view.dart';
 import '../widgets/fade_slide.dart';
 import '../widgets/section_header.dart';
+import 'device_qr_screen.dart';
 import 'qr_scan_screen.dart';
 
 class DeviceListScreen extends ConsumerWidget {
@@ -66,7 +69,14 @@ class DeviceListScreen extends ConsumerWidget {
         ],
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
+      error: (err, _) {
+        if (err is FirebaseException && err.code == 'permission-denied') {
+          return const AuthRequiredView(
+            message: 'Please sign in. Guest access may be disabled in Firebase.',
+          );
+        }
+        return Center(child: Text('Error: $err'));
+      },
     );
   }
 
@@ -114,7 +124,7 @@ class DeviceListScreen extends ConsumerWidget {
                   final isValid = await repo.validateDeviceId(normalized);
                   if (!context.mounted) return;
                   if (!isValid) {
-                    _showSnack(context, 'Device not registered');
+                    _showSnack(context, 'Device not available (already claimed or not registered)');
                     return;
                   }
                   await _showNameDialog(context, repo, normalized);
@@ -187,7 +197,7 @@ class DeviceListScreen extends ConsumerWidget {
                     final isValid = await repo.validateDeviceId(id);
                     if (!navigator.mounted) return;
                     if (!isValid) {
-                      setState(() => error = 'Device not registered');
+                      setState(() => error = 'Device not available (already claimed or not registered)');
                       return;
                     }
                     await repo.addDevice(deviceId: id, name: name);
@@ -348,6 +358,7 @@ class DeviceListScreen extends ConsumerWidget {
     DeviceRepository repo,
     Device device,
   ) async {
+    final rootContext = context;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -370,11 +381,34 @@ class DeviceListScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               ListTile(
+                leading: const Icon(Icons.qr_code),
+                title: const Text('Show Device QR'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await Navigator.of(rootContext).push(
+                    MaterialPageRoute(
+                      builder: (_) => DeviceQrScreen(
+                        deviceId: device.deviceId,
+                        name: device.name,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.key),
+                title: const Text('Generate Pairing Code'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await _showPairingCodeGenerated(rootContext, repo, device);
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.edit),
                 title: const Text('Rename'),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  await _showRenameDialog(context, repo, device);
+                  await _showRenameDialog(rootContext, repo, device);
                 },
               ),
               ListTile(
@@ -382,12 +416,56 @@ class DeviceListScreen extends ConsumerWidget {
                 title: const Text('Remove'),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  await _confirmRemove(context, ref, repo, device);
+                  await _confirmRemove(rootContext, ref, repo, device);
                 },
               ),
               const SizedBox(height: 8),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showPairingCodeGenerated(
+    BuildContext context,
+    DeviceRepository repo,
+    Device device,
+  ) async {
+    String? code;
+    String? error;
+    try {
+      code = await repo.createPairingCode(deviceId: device.deviceId);
+    } on Exception catch (e) {
+      error = e.toString();
+    }
+
+    if (!context.mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pairing Code'),
+          content: error != null
+              ? Text(error, style: const TextStyle(color: Colors.redAccent))
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Use this code to pair ${device.name}'),
+                    const SizedBox(height: 12),
+                    SelectableText(
+                      code ?? '',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
+                ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
         );
       },
     );

@@ -22,6 +22,10 @@ abstract class DeviceRepository {
     required String name,
   });
 
+  Future<String> createPairingCode({
+    required String deviceId,
+  });
+
   Future<void> renameDevice({
     required String deviceId,
     required String name,

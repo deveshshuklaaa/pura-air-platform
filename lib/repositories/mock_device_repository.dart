@@ -7,8 +7,10 @@ import 'device_repository.dart';
 class MockDeviceRepository implements DeviceRepository {
   final _controller = StreamController<List<Device>>.broadcast();
   final List<Device> _devices = [...MockData.devices()];
+  final Set<String> _claimedIds = {};
 
   MockDeviceRepository() {
+    _claimedIds.addAll(_devices.map((device) => device.deviceId));
     _controller.add(_devices);
   }
 
@@ -41,11 +43,17 @@ class MockDeviceRepository implements DeviceRepository {
 
   @override
   Future<bool> validateDeviceId(String deviceId) async {
-    return deviceId.isNotEmpty;
+    if (deviceId.isEmpty) return false;
+    if (_devices.any((device) => device.deviceId == deviceId)) return true;
+    return !_claimedIds.contains(deviceId);
   }
 
   @override
   Future<void> addDevice({required String deviceId, required String name}) async {
+    if (_claimedIds.contains(deviceId) &&
+        !_devices.any((device) => device.deviceId == deviceId)) {
+      return;
+    }
     if (_devices.any((device) => device.deviceId == deviceId)) return;
     final base = MockData.devices().first.snapshot;
     _devices.add(Device(
@@ -55,6 +63,7 @@ class MockDeviceRepository implements DeviceRepository {
       lastSeen: DateTime.now(),
       snapshot: base,
     ));
+    _claimedIds.add(deviceId);
     _controller.add(List<Device>.from(_devices));
   }
 
@@ -67,6 +76,11 @@ class MockDeviceRepository implements DeviceRepository {
         ? pairingCode
         : 'PA-${pairingCode.toUpperCase()}';
     await addDevice(deviceId: deviceId, name: name);
+  }
+
+  @override
+  Future<String> createPairingCode({required String deviceId}) async {
+    return 'PAIR-${deviceId.replaceAll('PA-', '')}';
   }
 
   @override

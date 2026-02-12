@@ -15,7 +15,6 @@ class FirestoreDeviceRepository implements DeviceRepository {
 
   @override
   Stream<List<Device>> watchDevices() async* {
-    await _ensureSignedIn();
     yield* _auth.authStateChanges().asyncExpand((user) {
       if (user == null) return Stream.value(<Device>[]);
       return _firestore
@@ -34,9 +33,10 @@ class FirestoreDeviceRepository implements DeviceRepository {
     required int fanLevel,
     required bool mist,
   }) async {
-    await _ensureSignedIn();
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      throw StateError('Not signed in');
+    }
     await _firestore
         .collection('users')
         .doc(user.uid)
@@ -53,21 +53,145 @@ class FirestoreDeviceRepository implements DeviceRepository {
 
   @override
   Future<bool> validateDeviceId(String deviceId) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('Not signed in');
+    }
+
     final doc = await _firestore.collection('devices').doc(deviceId).get();
-    return doc.exists;
+    if (!doc.exists) return false;
+    final ownerUid = doc.data()?['owner_uid'] as String?;
+    return ownerUid == null || ownerUid == user.uid;
   }
 
   @override
   Future<void> addDevice({required String deviceId, required String name}) async {
-    await _ensureSignedIn();
     final user = _auth.currentUser;
-    if (user == null) return;
-    await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('devices')
-        .doc(deviceId)
-        .set({
+    if (user == null) {
+      throw StateError('Not signed in');
+    }
+
+    await _firestore.runTransaction((tx) async {
+      final deviceRef = _firestore.collection('devices').doc(deviceId);
+      final deviceSnap = await tx.get(deviceRef);
+      if (!deviceSnap.exists) {
+        throw StateError('Device not registered');
+      }
+
+      final ownerUid = deviceSnap.data()?['owner_uid'] as String?;
+      if (ownerUid != null && ownerUid != user.uid) {
+        throw StateError('Device already claimed');
+      }
+
+      if (ownerUid == null) {
+        tx.update(deviceRef, {'owner_uid': user.uid});
+      }
+
+      final userDeviceRef = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('devices')
+          .doc(deviceId);
+      tx.set(userDeviceRef, _userDevicePayload(name), SetOptions(merge: true));
+    });
+  }
+
+  @override
+  Future<void> addDeviceWithPairingCode({
+    required String pairingCode,
+    required String name,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('Not signed in');
+    }
+
+    await _firestore.runTransaction((tx) async {
+      final codeRef = _firestore.collection('pairing_codes').doc(pairingCode);
+      final codeSnap = await tx.get(codeRef);
+      if (!codeSnap.exists) {
+        throw StateError('Pairing code not found');
+      }
+
+      final data = codeSnap.data() ?? <String, dynamic>{};
+      final deviceId = (data['device_id'] ?? data['deviceId']) as String?;
+      final ownerFromCode = (data['owner_uid'] ?? data['created_by']) as String?;
+      if (deviceId == null || deviceId.isEmpty) {
+        throw StateError('Invalid pairing code');
+      }
+
+      final deviceRef = _firestore.collection('devices').doc(deviceId);
+      final deviceSnap = await tx.get(deviceRef);
+      if (!deviceSnap.exists) {
+        throw StateError('Device not registered');
+      }
+
+      final deviceOwner = deviceSnap.data()?['owner_uid'] as String?;
+      if (deviceOwner == null) {
+        throw StateError('Device not claimed yet');
+      }
+      if (ownerFromCode != null && ownerFromCode != deviceOwner) {
+        throw StateError('Invalid pairing code');
+      }
+
+      final userDeviceRef = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('devices')
+          .doc(deviceId);
+      tx.set(userDeviceRef, _userDevicePayload(name), SetOptions(merge: true));
+      tx.delete(codeRef);
+    });
+  }
+
+  @override
+  Future<String> createPairingCode({required String deviceId}) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('Not signed in');
+    }
+
+    final deviceDoc = await _firestore.collection('devices').doc(deviceId).get();
+    if (!deviceDoc.exists) {
+      throw StateError('Device not registered');
+    }
+    final ownerUid = deviceDoc.data()?['owner_uid'] as String?;
+    if (ownerUid != user.uid) {
+      throw StateError('Only the owner can generate pairing codes');
+    }
+
+    final codes = _firestore.collection('pairing_codes');
+    for (var i = 0; i < 5; i++) {
+      final code = _generateCode();
+      final doc = codes.doc(code);
+      final snap = await doc.get();
+      if (snap.exists) continue;
+      await doc.set({
+        'device_id': deviceId,
+        'owner_uid': ownerUid,
+        'created_by': user.uid,
+        'created_at': FieldValue.serverTimestamp(),
+      });
+      return code;
+    }
+    throw StateError('Unable to generate pairing code');
+  }
+
+  String _generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final now = DateTime.now().microsecondsSinceEpoch;
+    final buffer = StringBuffer('PC-');
+    var seed = now;
+    for (var i = 0; i < 6; i++) {
+      final index = seed % chars.length;
+      buffer.write(chars[index]);
+      seed = (seed ~/ chars.length) + i;
+    }
+    return buffer.toString();
+  }
+
+  Map<String, dynamic> _userDevicePayload(String name) {
+    return {
       'name': name,
       'online': true,
       'last_seen': FieldValue.serverTimestamp(),
@@ -84,33 +208,15 @@ class FirestoreDeviceRepository implements DeviceRepository {
         'humidity': 0.0,
         'temperature': 0.0,
       },
-    }, SetOptions(merge: true));
-  }
-
-  @override
-  Future<void> addDeviceWithPairingCode({
-    required String pairingCode,
-    required String name,
-  }) async {
-    await _ensureSignedIn();
-    final codeDoc = await _firestore.collection('pairing_codes').doc(pairingCode).get();
-    if (!codeDoc.exists) {
-      throw StateError('Pairing code not found');
-    }
-    final data = codeDoc.data() ?? <String, dynamic>{};
-    final deviceId = (data['device_id'] ?? data['deviceId']) as String?;
-    if (deviceId == null || deviceId.isEmpty) {
-      throw StateError('Invalid pairing code');
-    }
-    await addDevice(deviceId: deviceId, name: name);
-    await codeDoc.reference.delete();
+    };
   }
 
   @override
   Future<void> renameDevice({required String deviceId, required String name}) async {
-    await _ensureSignedIn();
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      throw StateError('Not signed in');
+    }
     await _firestore
         .collection('users')
         .doc(user.uid)
@@ -121,20 +227,16 @@ class FirestoreDeviceRepository implements DeviceRepository {
 
   @override
   Future<void> removeDevice({required String deviceId}) async {
-    await _ensureSignedIn();
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      throw StateError('Not signed in');
+    }
     await _firestore
         .collection('users')
         .doc(user.uid)
         .collection('devices')
         .doc(deviceId)
         .delete();
-  }
-
-  Future<void> _ensureSignedIn() async {
-    if (_auth.currentUser != null) return;
-    await _auth.signInAnonymously();
   }
 
   List<Device> _mapSnapshot(QuerySnapshot<Map<String, dynamic>> snapshot) {

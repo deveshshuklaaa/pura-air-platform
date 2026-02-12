@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../state/device_state.dart';
-import '../state/auth_state.dart';
+import '../state/profile_state.dart';
 import '../state/theme_state.dart';
+import '../state/auth_state.dart';
 import 'control_panel_screen.dart';
 import 'device_dashboard_screen.dart';
 import 'device_list_screen.dart';
 import 'history_screen.dart';
 import 'notifications_screen.dart';
+import 'auth_screen.dart';
+import 'profile_screen.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
@@ -19,10 +22,24 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   late final ProviderSubscription _deviceListener;
+  late final ProviderSubscription _authListener;
 
   @override
   void initState() {
     super.initState();
+    _authListener = ref.listenManual(authStateProvider, (previous, next) {
+      next.whenData((user) {
+        ref.invalidate(devicesStreamProvider);
+        ref.invalidate(profileStreamProvider);
+        ref.invalidate(selectedDeviceIdProvider);
+        if (user == null && mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AuthScreen()),
+            (route) => false,
+          );
+        }
+      });
+    });
     _deviceListener = ref.listenManual(devicesStreamProvider, (previous, next) {
       next.whenData((devices) {
         if (devices.isEmpty) return;
@@ -37,6 +54,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   @override
   void dispose() {
     _deviceListener.close();
+    _authListener.close();
     super.dispose();
   }
 
@@ -67,8 +85,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider).signOut(),
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
           ),
           if (device != null)
             Padding(

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/google_auth_service.dart';
 import '../state/auth_state.dart';
 import '../state/theme_state.dart';
+import '../state/device_state.dart';
+import '../state/profile_state.dart';
+import 'home_shell.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -13,6 +17,23 @@ class AuthScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual(authStateProvider, (previous, next) {
+      next.whenData((user) {
+        if (user == null || !mounted) return;
+        ref.invalidate(devicesStreamProvider);
+        ref.invalidate(profileStreamProvider);
+        ref.invalidate(selectedDeviceIdProvider);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeShell()),
+          (route) => false,
+        );
+      });
+    });
+  }
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -126,6 +147,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                             _passwordController.text.trim(),
                                           );
                                         }
+                                      } on FirebaseAuthException catch (e) {
+                                        setState(() => _error = '${e.code}: ${e.message ?? ''}');
                                       } on Exception catch (e) {
                                         setState(() => _error = e.toString());
                                       } finally {
@@ -148,6 +171,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                       });
                                       try {
                                         await googleAuth.signInWithGoogle();
+                                        if (FirebaseAuth.instance.currentUser == null) {
+                                          setState(() => _error = 'Google sign-in returned no user');
+                                        }
+                                      } on FirebaseAuthException catch (e) {
+                                        setState(() => _error = '${e.code}: ${e.message ?? ''}');
                                       } on Exception catch (e) {
                                         setState(() => _error = e.toString());
                                       } finally {
