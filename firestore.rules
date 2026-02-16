@@ -18,6 +18,12 @@ service cloud.firestore {
         && request.resource.data.owner_uid == request.auth.uid
         && request.resource.data.diff(resource.data).changedKeys().hasOnly(['owner_uid']);
       allow delete: if false;
+
+      match /history/{historyId} {
+        allow read: if request.auth != null
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid)/devices/$(deviceId));
+        allow write: if false;
+      }
     }
 
     // Pairing codes (sharing only).

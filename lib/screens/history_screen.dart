@@ -16,53 +16,83 @@ class HistoryScreen extends ConsumerWidget {
     if (device == null) {
       return const Center(child: Text('No device selected.'));
     }
+
+    final historyAsync = ref.watch(selectedDeviceHistoryProvider);
     final snapshot = device.snapshot;
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const SectionHeader(
-          title: 'History',
-          subtitle: 'Past 24 hours',
-        ),
-        FadeSlide(
-          child: HistoryChart(
-            label: 'AQI',
-            points: _historySeries(snapshot.aqi.toDouble()),
-            color: aqiColor(snapshot.aqi),
+    return historyAsync.when(
+      data: (history) {
+        final aqiSeries =
+            _series(history, 'aqi', fallback: snapshot.aqi.toDouble());
+        final pm25Series = _series(
+          history,
+          'pm25',
+          fallback: snapshot.pm25Avg.toDouble(),
+        );
+        final pm10Series = _series(history, 'pm10', fallback: 0);
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const SectionHeader(
+              title: 'History',
+              subtitle: 'Recent sensor history',
+            ),
+            FadeSlide(
+              child: HistoryChart(
+                label: 'AQI',
+                points: aqiSeries,
+                color: aqiColor(snapshot.aqi),
+              ),
+            ),
+            const SizedBox(height: 12),
+            FadeSlide(
+              delay: const Duration(milliseconds: 120),
+              child: HistoryChart(
+                label: 'PM2.5',
+                points: pm25Series,
+                color: Colors.orangeAccent,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FadeSlide(
+              delay: const Duration(milliseconds: 200),
+              child: HistoryChart(
+                label: 'PM10',
+                points: pm10Series,
+                color: Colors.tealAccent,
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'History unavailable: $error',
+            textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 12),
-        FadeSlide(
-          delay: const Duration(milliseconds: 120),
-          child: HistoryChart(
-            label: 'CO2',
-            points: _historySeries(snapshot.co2.toDouble()),
-            color: Colors.tealAccent,
-          ),
-        ),
-        const SizedBox(height: 12),
-        FadeSlide(
-          delay: const Duration(milliseconds: 200),
-          child: HistoryChart(
-            label: 'PM2.5',
-            points: _historySeries(snapshot.pm25Avg.toDouble()),
-            color: Colors.orangeAccent,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  List<double> _historySeries(double base) {
-    return [
-      base - 14,
-      base - 6,
-      base - 10,
-      base - 4,
-      base + 2,
-      base + 6,
-      base + 4,
-    ];
+  List<double> _series(
+    List<Map<String, double>> history,
+    String key, {
+    required double fallback,
+  }) {
+    if (history.isEmpty) {
+      return List<double>.filled(7, fallback);
+    }
+
+    final values = history.map((row) => row[key]).whereType<double>().toList();
+    if (values.isEmpty) {
+      return List<double>.filled(7, fallback);
+    }
+
+    return values;
   }
 }

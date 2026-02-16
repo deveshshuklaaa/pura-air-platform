@@ -1,0 +1,34 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "device_access": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        "$deviceId": {
+          ".write": "$uid === auth.uid"
+        }
+      }
+    },
+    "devices": {
+      "$deviceId": {
+        "raw": {
+          ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".write": false
+        },
+        "state": {
+          ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".write": false
+        },
+        "forecast": {
+          ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".write": false
+        },
+        "controls": {
+          ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".write": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true"
+        }
+      }
+    }
+  }
+}
