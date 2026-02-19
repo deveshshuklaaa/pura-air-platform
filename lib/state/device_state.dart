@@ -50,7 +50,7 @@ final selectedDeviceHistoryProvider = StreamProvider<List<Map<String, double>>>(
         .collection('devices')
         .doc(device.deviceId)
         .collection('history')
-        .orderBy('timestamp', descending: true)
+        .orderBy('server_received_at', descending: true)
         .limit(30)
         .snapshots()
         .map((snapshot) {

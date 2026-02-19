@@ -26,7 +26,23 @@
         },
         "controls": {
           ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
-          ".write": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true"
+          ".write": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".validate": "newData.hasChildren(['mode','fan_level','mist','updated_at'])",
+          "mode": {
+            ".validate": "newData.isString() && (newData.val() === 'AUTO' || newData.val() === 'MANUAL')"
+          },
+          "fan_level": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
+          },
+          "mist": {
+            ".validate": "newData.isBoolean()"
+          },
+          "updated_at": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     }
