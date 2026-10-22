@@ -10,9 +10,17 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "check": "node --check server.js"
+    "check": "node --check server.js && node --check device-security.js && node --check user-api.js && node --check aqi.js && node --check forecast.js && node --check firebase.js && node --check firestore.js && node --check durable-telemetry.js && node --check telemetry-contract.js && node --check scripts/simulator.js",
+    "test": "node --test test/security.test.js test/telemetry.test.js",
+    "test:rules": "node --test --test-concurrency=1 test/emulator.test.js test/telemetry-emulator.test.js test/firmware-emulator.test.js",
+    "test:emulators": "node scripts/run-emulators.js",
+    "test:physical": "node scripts/run-emulators.js --physical"
   },
   "dependencies": {
     "firebase-admin": "^13.2.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "firebase": "13.1.0"
   }
 }

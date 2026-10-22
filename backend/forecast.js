@@ -52,11 +52,13 @@ function predictAqi(model, timestamp) {
   return Math.round(clamp(predicted, 0, 500));
 }
 
-function buildForecast(history, baseTimestamp) {
+function buildForecast(history, baseTimestamp, calculatedAt = Date.now()) {
   if (!Array.isArray(history) || history.length === 0 || !Number.isFinite(baseTimestamp)) {
     return null;
   }
 
+  history = history.filter((p) => Number.isFinite(p.timestamp) && Number.isFinite(p.aqi));
+  if (new Set(history.map((p) => p.timestamp)).size < 2) return null;
   const model = buildLinearRegression(history);
 
   if (!model) {
@@ -65,14 +67,16 @@ function buildForecast(history, baseTimestamp) {
     return {
       aqi_10min: fallback,
       aqi_30min: fallback,
-      calculated_at: Date.now(),
+      calculated_at: calculatedAt,
+      base_timestamp: baseTimestamp,
+      sample_count: history.length,
     };
   }
 
   return {
     aqi_10min: predictAqi(model, baseTimestamp + TEN_MINUTES_MS),
     aqi_30min: predictAqi(model, baseTimestamp + THIRTY_MINUTES_MS),
-    calculated_at: Date.now(),
+    calculated_at: calculatedAt,
   };
 }
 

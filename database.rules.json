@@ -3,42 +3,42 @@
     ".read": false,
     ".write": false,
     "device_access": {
-      "$uid": {
-        ".read": "$uid === auth.uid",
-        "$deviceId": {
-          ".write": "$uid === auth.uid"
-        }
-      }
+      ".read": false,
+      ".write": false
+    },
+    "authorization": {
+      ".read": false,
+      ".write": false
     },
     "devices": {
       "$deviceId": {
         "raw": {
-          ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".read": "auth != null && auth.token.firebase.sign_in_provider != 'anonymous' && root.child('authorization').child($deviceId).child('expires_at').val() > now && root.child('authorization').child($deviceId).child('members').child(auth.uid).child('read').val() === true",
           ".write": false
         },
         "state": {
-          ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".read": "auth != null && auth.token.firebase.sign_in_provider != 'anonymous' && root.child('authorization').child($deviceId).child('expires_at').val() > now && root.child('authorization').child($deviceId).child('members').child(auth.uid).child('read').val() === true",
           ".write": false
         },
         "forecast": {
-          ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".read": "auth != null && auth.token.firebase.sign_in_provider != 'anonymous' && root.child('authorization').child($deviceId).child('expires_at').val() > now && root.child('authorization').child($deviceId).child('members').child(auth.uid).child('read').val() === true",
           ".write": false
         },
         "controls": {
-          ".read": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
-          ".write": "auth != null && root.child('device_access').child(auth.uid).child($deviceId).val() === true",
+          ".read": "auth != null && auth.token.firebase.sign_in_provider != 'anonymous' && root.child('authorization').child($deviceId).child('expires_at').val() > now && root.child('authorization').child($deviceId).child('members').child(auth.uid).child('read').val() === true && root.child('authorization').child($deviceId).child('members').child(auth.uid).child('control').val() === true",
+          ".write": "auth != null && auth.token.firebase.sign_in_provider != 'anonymous' && root.child('authorization').child($deviceId).child('expires_at').val() > now && root.child('authorization').child($deviceId).child('members').child(auth.uid).child('read').val() === true && root.child('authorization').child($deviceId).child('members').child(auth.uid).child('control').val() === true && newData.exists()",
           ".validate": "newData.hasChildren(['mode','fan_level','mist','updated_at'])",
           "mode": {
             ".validate": "newData.isString() && (newData.val() === 'AUTO' || newData.val() === 'MANUAL')"
           },
           "fan_level": {
-            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
+            ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 5"
           },
           "mist": {
             ".validate": "newData.isBoolean()"
           },
           "updated_at": {
-            ".validate": "newData.isNumber()"
+            ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= now - 60000 && newData.val() <= now + 10000"
           },
           "$other": {
             ".validate": false

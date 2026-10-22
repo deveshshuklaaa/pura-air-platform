@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-Color aqiColor(int aqi) {
+Color aqiColor(int? aqi) {
+  if (aqi == null) return Colors.grey;
   if (aqi <= 50) return const Color(0xFF4CFF88);
   if (aqi <= 100) return const Color(0xFFB6FF5C);
   if (aqi <= 150) return const Color(0xFFFFB74D);
@@ -9,7 +10,8 @@ Color aqiColor(int aqi) {
   return const Color(0xFF7E0023);
 }
 
-String trendLabel(int delta) {
+String trendLabel(int? delta) {
+  if (delta == null) return 'Unavailable';
   if (delta > 5) return 'Rising';
   if (delta < -5) return 'Improving';
   return 'Stable';

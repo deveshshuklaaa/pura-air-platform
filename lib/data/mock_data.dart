@@ -11,6 +11,7 @@ class MockData {
         online: true,
         lastSeen: now.subtract(const Duration(minutes: 2)),
         snapshot: const DeviceSnapshot(
+          isTestData: true,
           co2: 980,
           pm25Avg: 42,
           aqi: 68,
@@ -30,6 +31,7 @@ class MockData {
         online: true,
         lastSeen: now.subtract(const Duration(minutes: 6)),
         snapshot: const DeviceSnapshot(
+          isTestData: true,
           co2: 760,
           pm25Avg: 18,
           aqi: 32,
@@ -49,6 +51,7 @@ class MockData {
         online: false,
         lastSeen: now.subtract(const Duration(hours: 3)),
         snapshot: const DeviceSnapshot(
+          isTestData: true,
           co2: 1320,
           pm25Avg: 88,
           aqi: 142,

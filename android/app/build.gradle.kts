@@ -49,3 +49,19 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
+
+// Explicit local-test opt-in. Configure after the plugin's variant defaults.
+val puraIsolatedTest = providers.environmentVariable("PURA_ISOLATED_TEST").orElse("false").get() == "true"
+gradle.projectsEvaluated {
+    if (puraIsolatedTest) {
+        tasks.withType<com.google.gms.googleservices.GoogleServicesTask>().configureEach {
+            googleServicesJsonFiles.set(listOf(file("src/emulator/google-services.json")))
+            doLast {
+                val generated = outputDirectory.file("values/values.xml").get().asFile.readText()
+                check(generated.contains(">demo-pura-security</string>")) {
+                    "Isolated test Firebase configuration was not generated; refusing APK"
+                }
+            }
+        }
+    }
+}

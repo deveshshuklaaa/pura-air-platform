@@ -1,5 +1,7 @@
 'use strict';
 
+const INDICATOR_VERSION = 'pura-particulate-v1';
+
 const PM25_BREAKPOINTS = [
   { cLow: 0.0, cHigh: 12.0, iLow: 0, iHigh: 50 },
   { cLow: 12.1, cHigh: 35.4, iLow: 51, iHigh: 100 },
@@ -32,7 +34,7 @@ function interpolateAqi(concentration, bp) {
 }
 
 function calculateSubIndex(concentration, breakpoints) {
-  if (!isValidNumber(concentration)) {
+  if (!isValidNumber(concentration) || concentration < 0) {
     return null;
   }
 
@@ -47,8 +49,9 @@ function calculateSubIndex(concentration, breakpoints) {
 }
 
 function calculateAqi({ pm25, pm10 }) {
-  const aqiPm25 = calculateSubIndex(pm25, PM25_BREAKPOINTS);
-  const aqiPm10 = calculateSubIndex(pm10, PM10_BREAKPOINTS);
+  if (!isValidNumber(pm25) || !isValidNumber(pm10) || pm25 < 0 || pm10 < 0) return null;
+  const aqiPm25 = calculateSubIndex(Math.floor(pm25 * 10) / 10, PM25_BREAKPOINTS);
+  const aqiPm10 = calculateSubIndex(Math.floor(pm10), PM10_BREAKPOINTS);
 
   if (aqiPm25 === null || aqiPm10 === null) {
     return null;
@@ -66,6 +69,7 @@ function calculateAqi({ pm25, pm10 }) {
 }
 
 module.exports = {
+  INDICATOR_VERSION,
   calculateAqi,
   isValidNumber,
 };

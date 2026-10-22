@@ -1,5 +1,7 @@
 # PuraAir
 
+Phase 1A changes device authorization and the claim/pair/remove contract. Read [Authorization and migration](docs/development/AUTHORIZATION_SECURITY.md) and [verification results](docs/development/PHASE_1A_RESULTS.md). Device registry/credentials are private; clients use the trusted backend API for management. Older direct-write instructions below describe the pre-migration model and must not be used for this revision. Set `--dart-define=PURA_API_BASE_URL=https://your-reviewed-backend.example` when running/building the app.
+
 Flutter app for the PURA AIR IoT dashboard (dark futuristic UI).
 
 ## Setup

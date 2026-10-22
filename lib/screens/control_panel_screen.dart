@@ -32,6 +32,11 @@ class _ControlPanelScreenState extends ConsumerState<ControlPanelScreen> {
     if (device == null) {
       return const Center(child: Text('No device selected.'));
     }
+    if (!device.canControl) {
+      return const Center(
+          child: Text(
+              'Shared access is read-only. Only the owner can control this device.'));
+    }
     if (device.deviceId != _lastDeviceId) {
       _syncFromDevice();
     }
@@ -63,12 +68,22 @@ class _ControlPanelScreenState extends ConsumerState<ControlPanelScreen> {
   }
 
   Future<void> _persistControls(DeviceRepository repo, String deviceId) async {
-    await repo.updateControls(
-      deviceId: deviceId,
-      manual: _manual,
-      fanLevel: _fanLevel,
-      mist: _mist,
-    );
+    try {
+      await repo.updateControls(
+        deviceId: deviceId,
+        manual: _manual,
+        fanLevel: _fanLevel,
+        mist: _mist,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(_syncFromDevice);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Control request was rejected or unavailable. Please refresh and try again.')),
+      );
+    }
   }
 
   void _syncFromDevice() {

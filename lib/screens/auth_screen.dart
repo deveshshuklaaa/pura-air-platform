@@ -51,7 +51,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.read(authControllerProvider);
-    final googleAuth = GoogleAuthService();
     final themeMode = ref.watch(themeModeProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -86,8 +85,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           const SizedBox(height: 6),
                           Text(
                             'Sign in to sync devices',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: isDark ? Colors.white70 : Colors.black54,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black54,
                                 ),
                           ),
                           const SizedBox(height: 20),
@@ -106,19 +109,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 TextFormField(
                                   controller: _emailController,
                                   keyboardType: TextInputType.emailAddress,
-                                  decoration: const InputDecoration(labelText: 'Email'),
-                                  validator: (value) => value != null && value.contains('@')
-                                      ? null
-                                      : 'Enter a valid email',
+                                  decoration:
+                                      const InputDecoration(labelText: 'Email'),
+                                  validator: (value) =>
+                                      value != null && value.contains('@')
+                                          ? null
+                                          : 'Enter a valid email',
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
                                   controller: _passwordController,
                                   obscureText: true,
-                                  decoration: const InputDecoration(labelText: 'Password'),
-                                  validator: (value) => value != null && value.length >= 6
-                                      ? null
-                                      : 'Min 6 characters',
+                                  decoration: const InputDecoration(
+                                      labelText: 'Password'),
+                                  validator: (value) =>
+                                      value != null && value.length >= 6
+                                          ? null
+                                          : 'Min 6 characters',
                                 ),
                               ],
                             ),
@@ -130,7 +137,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               onPressed: _loading
                                   ? null
                                   : () async {
-                                      if (!_formKey.currentState!.validate()) return;
+                                      if (!_formKey.currentState!.validate()) {
+                                        return;
+                                      }
                                       setState(() {
                                         _loading = true;
                                         _error = null;
@@ -148,14 +157,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                           );
                                         }
                                       } on FirebaseAuthException catch (e) {
-                                        setState(() => _error = '${e.code}: ${e.message ?? ''}');
+                                        setState(() => _error =
+                                            '${e.code}: ${e.message ?? ''}');
                                       } on Exception catch (e) {
                                         setState(() => _error = e.toString());
                                       } finally {
-                                        if (mounted) setState(() => _loading = false);
+                                        if (mounted) {
+                                          setState(() => _loading = false);
+                                        }
                                       }
                                     },
-                              child: Text(_isRegister ? 'Create account' : 'Sign in'),
+                              child: Text(
+                                  _isRegister ? 'Create account' : 'Sign in'),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -170,16 +183,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                         _error = null;
                                       });
                                       try {
-                                        await googleAuth.signInWithGoogle();
-                                        if (FirebaseAuth.instance.currentUser == null) {
-                                          setState(() => _error = 'Google sign-in returned no user');
+                                        await GoogleAuthService()
+                                            .signInWithGoogle();
+                                        if (FirebaseAuth.instance.currentUser ==
+                                            null) {
+                                          setState(() => _error =
+                                              'Google sign-in returned no user');
                                         }
                                       } on FirebaseAuthException catch (e) {
-                                        setState(() => _error = '${e.code}: ${e.message ?? ''}');
+                                        setState(() => _error =
+                                            '${e.code}: ${e.message ?? ''}');
                                       } on Exception catch (e) {
                                         setState(() => _error = e.toString());
                                       } finally {
-                                        if (mounted) setState(() => _loading = false);
+                                        if (mounted) {
+                                          setState(() => _loading = false);
+                                        }
                                       }
                                     },
                               icon: const Icon(Icons.g_mobiledata),
@@ -200,7 +219,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     } on Exception catch (e) {
                                       setState(() => _error = e.toString());
                                     } finally {
-                                      if (mounted) setState(() => _loading = false);
+                                      if (mounted) {
+                                        setState(() => _loading = false);
+                                      }
                                     }
                                   },
                             child: const Text('Continue as guest'),
@@ -215,8 +236,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               TextButton(
                                 onPressed: _loading
                                     ? null
-                                    : () => setState(() => _isRegister = !_isRegister),
-                                child: Text(_isRegister ? 'Sign in' : 'Create one'),
+                                    : () => setState(
+                                        () => _isRegister = !_isRegister),
+                                child: Text(
+                                    _isRegister ? 'Sign in' : 'Create one'),
                               ),
                             ],
                           ),
@@ -233,7 +256,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
                   onPressed: () {
                     ref.read(themeModeProvider.notifier).state =
-                        themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+                        themeMode == ThemeMode.dark
+                            ? ThemeMode.light
+                            : ThemeMode.dark;
                   },
                 ),
               ),

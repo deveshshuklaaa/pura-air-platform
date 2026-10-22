@@ -1,0 +1,3 @@
+{"device_id":"PA-FW-FIXTURE","event_id":"0123456789abcdef0123456789abcdef-1","sequence":1,"timestamp":1792585800000,"source":"hardware","pm1":11.00,"pm25":14.00,"pm10":45.00,"co2":460,"temperature":23.6007,"humidity":48.0003,"mq135_raw":603}
+{"device_id":"PA-FW-FIXTURE","event_id":"0123456789abcdef0123456789abcdef-2","sequence":2,"timestamp":1792585801000,"source":"hardware","pm1":11.00,"pm25":17.00,"pm10":45.00,"co2":460,"temperature":23.6007,"humidity":48.0003,"mq135_raw":603}
+{"device_id":"PA-FW-FIXTURE","event_id":"0123456789abcdef0123456789abcdef-3","sequence":3,"timestamp":1792585802000,"source":"hardware","pm1":11.00,"pm25":20.00,"pm10":45.00,"co2":460,"temperature":23.6007,"humidity":48.0003,"mq135_raw":603}

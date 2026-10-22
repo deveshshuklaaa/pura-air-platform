@@ -25,7 +25,9 @@ class AppTheme {
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),
-      textTheme: GoogleFonts.spaceGroteskTextTheme().apply(
+      textTheme: (const bool.fromEnvironment('PURA_ISOLATED_TEST')
+          ? Typography.material2021().black
+          : GoogleFonts.spaceGroteskTextTheme()).apply(
         bodyColor: scheme.onSurface,
         displayColor: scheme.onSurface,
       ),
@@ -77,7 +79,9 @@ class AppTheme {
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),
-      textTheme: GoogleFonts.spaceGroteskTextTheme().apply(
+      textTheme: (const bool.fromEnvironment('PURA_ISOLATED_TEST')
+          ? Typography.material2021().black
+          : GoogleFonts.spaceGroteskTextTheme()).apply(
         bodyColor: scheme.onSurface,
         displayColor: scheme.onSurface,
       ),

@@ -5,42 +5,17 @@ function getDeviceHistoryCollection(firestore, deviceId) {
 }
 
 async function saveHistoryRecord(firestore, deviceId, record) {
-  const historyCollection = getDeviceHistoryCollection(firestore, deviceId);
-  const explicitId =
-    typeof record.idempotency_key === 'string' && record.idempotency_key
-      ? record.idempotency_key
-      : null;
-  const docRef = explicitId ? historyCollection.doc(explicitId) : historyCollection.doc();
-  const payload = {
-    ...record,
-    created_at: Date.now(),
-  };
-
-  await docRef.set(payload, { merge: true });
+  const { identity } = require('./telemetry-contract');
+  if (typeof record.event_id !== 'string') throw Error('stable_event_id_required');
+  await getDeviceHistoryCollection(firestore, deviceId).doc(identity(deviceId, record.event_id)).set({
+    ...record, created_at: record.server_received_at,
+  });
 }
 
-async function getRecentHistory(firestore, deviceId, limit = 30) {
-  const historyCollection = getDeviceHistoryCollection(firestore, deviceId);
-
-  const snapshot = await historyCollection.orderBy('server_received_at', 'desc').limit(limit).get();
-
-  const docs = snapshot.docs
-    .map((doc) => doc.data())
-    .map((item) => {
-      if (!Number.isFinite(item?.timestamp) || !Number.isFinite(item?.aqi)) {
-        return null;
-      }
-      return {
-        ...item,
-        server_received_at: Number.isFinite(item?.server_received_at)
-          ? item.server_received_at
-          : item.timestamp,
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.server_received_at - b.server_received_at);
-
-  return docs;
+async function getRecentHistory(firestore, deviceId, limit = 60) {
+  const snapshot = await getDeviceHistoryCollection(firestore, deviceId).orderBy('timestamp', 'desc').limit(limit).get();
+  return snapshot.docs.map(doc => doc.data()).filter(item => Number.isFinite(item.timestamp))
+    .sort((a,b) => a.timestamp - b.timestamp || (a.accepted_order || 0) - (b.accepted_order || 0));
 }
 
 async function saveDeadLetterRecord(firestore, record) {
@@ -58,19 +33,8 @@ async function cleanupOldHistoryForDevice(firestore, deviceId, cutoffTimestamp, 
     .limit(batchSize)
     .get();
 
-  const legacySnapshot = await historyCollection
-    .where('timestamp', '<', cutoffTimestamp)
-    .orderBy('timestamp', 'asc')
-    .limit(batchSize)
-    .get();
-
-  const refs = new Map();
-  for (const doc of primarySnapshot.docs) {
-    refs.set(doc.ref.path, doc.ref);
-  }
-  for (const doc of legacySnapshot.docs) {
-    refs.set(doc.ref.path, doc.ref);
-  }
+  // Never delete newly received data based only on a producer's old clock.
+  const refs = new Map(primarySnapshot.docs.map(doc => [doc.ref.path, doc.ref]));
 
   if (refs.size === 0) {
     return 0;

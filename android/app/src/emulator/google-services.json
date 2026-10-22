@@ -1,0 +1,16 @@
+{
+  "project_info": {
+    "project_number": "123456789000",
+    "project_id": "demo-pura-security",
+    "firebase_url": "https://demo-pura-security.firebaseio.com",
+    "storage_bucket": "demo-pura-security.appspot.com"
+  },
+  "client": [{
+    "client_info": {
+      "mobilesdk_app_id": "1:123456789000:android:0123456789abcdef012345",
+      "android_client_info": { "package_name": "com.puraair.app" }
+    },
+    "api_key": [{ "current_key": "AIzaSyDemoPuraLocalOnlyNotARealKey0000000" }]
+  }],
+  "configuration_version": "1"
+}

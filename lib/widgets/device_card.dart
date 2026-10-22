@@ -63,14 +63,17 @@ class DeviceCardWidget extends StatelessWidget {
                       Text(
                         online ? 'Online' : 'Offline',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: online ? theme.colorScheme.secondary : Colors.redAccent,
+                          color: online
+                              ? theme.colorScheme.secondary
+                              : Colors.redAccent,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'Last seen ${_relativeTime(device.lastSeen)}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -80,13 +83,15 @@ class DeviceCardWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${device.snapshot.aqi}',
-                      style: theme.textTheme.headlineSmall?.copyWith(color: color),
+                      device.snapshot.aqi?.toString() ?? 'Unavailable',
+                      style:
+                          theme.textTheme.headlineSmall?.copyWith(color: color),
                     ),
                     Text(
                       device.snapshot.aqiCategory,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -100,6 +105,7 @@ class DeviceCardWidget extends StatelessWidget {
   }
 
   String _relativeTime(DateTime dt) {
+    if (dt.millisecondsSinceEpoch == 0) return 'unavailable';
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 1) return 'just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';

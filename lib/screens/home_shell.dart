@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/device.dart';
 import '../state/device_state.dart';
 import '../state/profile_state.dart';
 import '../state/theme_state.dart';
@@ -21,8 +23,8 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  late final ProviderSubscription _deviceListener;
-  late final ProviderSubscription _authListener;
+  late final ProviderSubscription<AsyncValue<List<Device>>> _deviceListener;
+  late final ProviderSubscription<AsyncValue<User?>> _authListener;
 
   @override
   void initState() {
@@ -45,7 +47,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         if (devices.isEmpty) return;
         final selected = ref.read(selectedDeviceIdProvider);
         if (selected == null) {
-          ref.read(selectedDeviceIdProvider.notifier).state = devices.first.deviceId;
+          ref.read(selectedDeviceIdProvider.notifier).state =
+              devices.first.deviceId;
         }
       });
     });
@@ -81,7 +84,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
             onPressed: () {
               ref.read(themeModeProvider.notifier).state =
-                  themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+                  themeMode == ThemeMode.dark
+                      ? ThemeMode.light
+                      : ThemeMode.dark;
             },
           ),
           IconButton(
